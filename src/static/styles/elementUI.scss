@@ -1,0 +1,17 @@
+.gutter{
+  display: table-cell !important;
+}
+
+.el-dialog__header{
+  border-bottom: 1px solid #DCDFE6;
+}
+
+.el-dialog form{
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.el-dialog .el-input--small .el-input__inner, .el-dialog .el-date-editor.el-input, .el-dialog .el-date-editor.el-input__inner, .el-textarea__inner{
+  width: 225px;
+}
