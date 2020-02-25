@@ -2,13 +2,14 @@ import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
 import store from './store/index'
-import ElementUI from 'element-ui'
+import ElementUI from './static/js/elementConfig'
 
 import { httpResponse } from './utils/httpResponse'
 import { btnPermission, includePermission } from './utils/permission'
 
 import 'nprogress/nprogress.css' // progress bar style
-import 'element-ui/lib/theme-chalk/index.css'
+// import 'element-ui/lib/theme-chalk/index.css'
+import './static/styles/element-variables.scss' // 自定义主题色
 import './static/styles/index.scss'
 
 import '@/static/icons'
