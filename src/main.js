@@ -14,6 +14,8 @@ import './static/styles/index.scss'
 
 import '@/static/icons'
 
+import i18n from "@/lang" // 国际化
+
 Vue.use(ElementUI)
 
 Vue.config.productionTip = false
@@ -37,5 +39,6 @@ Vue.directive('permission', {
 new Vue({
   router,
   store,
+  i18n,
   render: h => h(App)
 }).$mount('#app')
