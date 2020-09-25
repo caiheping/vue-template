@@ -5,7 +5,7 @@ function resolve (dir) {
 }
 
 module.exports = {
-  publicPath:  './',
+  publicPath: './',
   lintOnSave: true,
   // 打包时不生成.map文件
   productionSourceMap: false,
@@ -63,11 +63,11 @@ module.exports = {
     host: '0.0.0.0',
     port: 8888,
     proxy: {
-      '/api': {
-        target: 'http://192.168.2.244:443', // 代理地址
+      [process.env.VUE_APP_BASE_API]: {
+        target: 'http://127.0.0.1:9999',
         changeOrigin: true,
         pathRewrite: {
-          '^/api': '/hr'
+          ['^' + process.env.VUE_APP_BASE_API]: '/api/v1'
         }
       }
     }

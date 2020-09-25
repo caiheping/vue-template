@@ -48,4 +48,3 @@ export function formatMenus (originalArr) {
   console.log(arr2)
   return arr2
 }
-

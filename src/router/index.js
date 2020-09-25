@@ -1,90 +1,76 @@
 import Vue from 'vue'
-import VueRouter from 'vue-router'
-import NProgress from 'nprogress'
-// import store from '../store/index'
-// import { pagePermission } from '../utils/permission'
+import Router from 'vue-router'
 
-Vue.use(VueRouter)
+/**
+ * vue-router报错Uncaught (in promise)及解决方法
+ * 对Router原型链上的push方法进行重写，这样就不用每次调用方法都要加上catch
+ */
+const originalPush = Router.prototype.push
+Router.prototype.push = function push (location, onResolve, onReject) {
+  if (onResolve || onReject) return originalPush.call(this, location, onResolve, onReject)
+  return originalPush.call(this, location).catch(err => err)
+}
 
-NProgress.configure({ showSpinner: false }) // NProgress Configuration
+Vue.use(Router)
 
-const _import = require('./_import_' + process.env.NODE_ENV)
-
-const routes = [
+export const constantRoutes = [
   {
     path: '/',
     redirect: '/login'
   },
   {
+    path: '/redirect',
+    component: (resolve) => require(['@/views/layout'], resolve),
+    hidden: true,
+    children: [
+      {
+        path: '/redirect/:path(.*)',
+        component: (resolve) => require(['@/views/redirect'], resolve)
+      }
+    ]
+  },
+  {
     path: '/login',
-    name: 'login',
-    component: _import('login/index'),
+    name: 'Login',
+    hidden: true,
+    component: (resolve) => require(['@/views/login'], resolve),
     meta: {
       title: '登录'
     }
   },
   {
     path: '/user',
-    name: 'user',
-    component: _import('user/index'),
-    meta: {
-      title: '首页'
-    }
+    component: (resolve) => require(['@/views/layout'], resolve),
+    hidden: true,
+    children: [
+      {
+        path: 'profile',
+        component: (resolve) => require(['@/views/system/user/profile/index'], resolve),
+        name: 'Profile',
+        meta: { title: '个人中心', icon: 'user' }
+      }
+    ]
   },
   {
     path: '/404',
-    component: _import('errorPage/404'),
+    hidden: true,
+    component: (resolve) => require(['@/views/error/404'], resolve),
     meta: {
       title: '404'
     }
   },
   {
     path: '/401',
-    component: _import('errorPage/401'),
+    hidden: true,
+    component: (resolve) => require(['@/views/error/401'], resolve),
     meta: {
       title: '401'
     }
-  },
-  { path: '*', redirect: '/404' }
+  }
 ]
 
-const router = new VueRouter({
-  mode: 'hash',
-  routes
+export default new Router({
+  mode: 'hash', // 去掉url中的#
+  scrollBehavior: () => ({ y: 0 }),
+  routes: constantRoutes
 })
-
-// 路由导航钩子
-router.beforeEach(async (to, from, next) => {
-  NProgress.start()
-  document.title = to.meta.title
-  next()
-  // 先判断是否为登录，登录了才能获取到权限
-  // if (JSON.parse(sessionStorage.getItem('isLogin'))) {
-  //   try {
-  //     // 这里获取 permissionList
-  //     await store.dispatch('getPermissionList')
-  //     // 这里判断当前页面是否需要权限(如果路由有写name属性就代表需要权限)
-  //     const permissions = to.name
-  //     if (permissions) {
-  //       const hasPermission = pagePermission(permissions)
-  //       // 判断是否有页面权限，没有就跳到401页面
-  //       if (!hasPermission) next({ path: '/401', replace: true })
-  //     }
-  //     next()
-  //   } catch (e) {
-  //     console.log(e)
-  //   }
-  // } else {
-  //   if (to.path === '/login') {
-  //     next()
-  //   } else {
-  //     next({ path: '/login' })
-  //   }
-  // }
-})
-
-router.afterEach(() => {
-  NProgress.done()
-})
-
-export default router
