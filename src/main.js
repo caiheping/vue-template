@@ -8,6 +8,8 @@ import i18n from '@/lang' // 国际化
 import { httpResponse } from './utils/httpResponse'
 import { btnPermission, includePermission } from './utils/permission'
 import Pagination from '@/components/Pagination'
+import { resetForm, handleTree } from '@/utils/base'
+import { getDicts } from '@/api/system/dict/data'
 
 import './permission' // permission control
 import 'nprogress/nprogress.css' // progress bar style
@@ -21,9 +23,11 @@ Vue.use(ElementUI)
 
 Vue.config.productionTip = false
 Vue.prototype.$httpResponse = httpResponse
-
+Vue.prototype.resetForm = resetForm // 重置表单
+Vue.prototype.getDicts = getDicts // 获取字典
 Vue.prototype.checkBtnPermission = btnPermission // 检查方法权限
 Vue.prototype.includePermission = includePermission // 检查方法列表权限
+Vue.prototype.handleTree = handleTree
 
 // 全局组件挂载
 Vue.component('Pagination', Pagination)

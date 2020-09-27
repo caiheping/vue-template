@@ -6,8 +6,9 @@ export function listUser (params = {}) {
 }
 
 // 查询某个用户
-export function getUser (userId) {
-  return HttpRequest('/user/' + userId, 'get')
+export function getUser (id) {
+  console.log(id)
+  return HttpRequest('/user/' + id, 'get')
 }
 
 // 删除
