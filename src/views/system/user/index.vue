@@ -108,8 +108,8 @@
         <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="50" align="center" />
           <el-table-column label="用户名" align="center" prop="userName" :show-overflow-tooltip="true" />
-          <el-table-column label="姓名" align="center" prop="nickName" :show-overflow-tooltip="true" />
-          <el-table-column label="部门" align="center" prop="dept.deptName" :show-overflow-tooltip="true" />
+          <el-table-column label="昵称" align="center" prop="nickName" :show-overflow-tooltip="true" />
+          <el-table-column label="部门" align="center" prop="Department.deptName" :show-overflow-tooltip="true" />
           <el-table-column label="手机号码" align="center" prop="mobile" width="120" />
           <el-table-column label="状态" align="center">
             <template slot-scope="scope">
@@ -168,25 +168,13 @@
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-row>
           <el-col :span="12">
-            <el-form-item label="姓名" prop="nickName">
+            <el-form-item label="昵称" prop="nickName">
               <el-input v-model="form.nickName" placeholder="请输入姓名" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="归属部门" prop="deptId">
               <treeselect v-model="form.deptId" :options="deptOptions" :normalizer="normalizer" :show-count="true" placeholder="请选择归属部门" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="手机号码" prop="phonenumber">
-              <el-input v-model="form.phonenumber" placeholder="请输入手机号码" maxlength="11" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="邮箱" prop="email">
-              <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -216,6 +204,26 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="角色" prop="roleIds">
+              <el-select v-model="form.roleIds" multiple placeholder="请选择">
+                <el-option
+                  v-for="item in roleOptions"
+                  :key="item.id"
+                  :label="item.roleName"
+                  :value="item.id"
+                  :disabled="item.status === 1"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="手机号码" prop="mobile">
+              <el-input v-model="form.mobile" placeholder="请输入手机号码" maxlength="11" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="状态">
               <el-radio-group v-model="form.status">
                 <el-radio
@@ -228,17 +236,9 @@
           </el-col>
         </el-row>
         <el-row>
-          <el-col :span="12">
-            <el-form-item label="角色" prop="roleIds">
-              <el-select v-model="form.roleIds" multiple placeholder="请选择">
-                <el-option
-                  v-for="item in roleOptions"
-                  :key="item.roleId"
-                  :label="item.roleName"
-                  :value="item.roleId"
-                  :disabled="item.status == 1"
-                />
-              </el-select>
+          <el-col :span="24">
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -294,11 +294,11 @@
 
 <script>
 import { listUser, getUser, delUser, addUser, updateUser, exportUser, resetUserPwd, changeUserStatus, importTemplate } from '@/api/system/user'
+import { allRole } from '@/api/system/role'
 import { getToken } from '@/utils/auth'
 import { treeselect } from '@/api/system/dept'
 import Treeselect from '@riophae/vue-treeselect'
 import '@riophae/vue-treeselect/dist/vue-treeselect.css'
-import dayjs from 'dayjs'
 
 export default {
   name: 'User',
@@ -393,7 +393,7 @@ export default {
         //     trigger: ["blur", "change"]
         //   }
         // ],
-        // phonenumber: [
+        // mobile: [
         //   { required: true, message: "手机号码不能为空", trigger: "blur" },
         //   {
         //     pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/,
@@ -414,14 +414,15 @@ export default {
     this.baseUrl = process.env.VUE_APP_BASE_API
     this.getList()
     this.getTreeselect()
-    // this.getDicts('sys_normal_disable').then(response => {
-    //   this.statusOptions = response.data
+    this.getAllRole()
+    // this.getDicts('sys_normal_disable').then(res => {
+    //   this.statusOptions = res.data
     // })
-    // this.getDicts('sys_user_sex').then(response => {
-    //   this.sexOptions = response.data
+    // this.getDicts('sys_user_sex').then(res => {
+    //   this.sexOptions = res.data
     // })
-    // this.getConfigKey('sys.user.initPassword').then(response => {
-    //   this.initPassword = response.msg
+    // this.getConfigKey('sys.user.initPassword').then(res => {
+    //   this.initPassword = res.msg
     // })
   },
   methods: {
@@ -429,33 +430,36 @@ export default {
       return {
         id: node.deptId,
         children: node.children,
-        label: node.deptName,
+        label: node.deptName
       }
-    },
-    dateFormatter (row, column) {
-      return dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss')
     },
     /** 查询用户列表 */
     getList () {
       this.loading = true
-      listUser(this.queryParams).then(response => {
-        this.userList = response.data.rows
-        this.total = response.data.count
+      listUser(this.queryParams).then(res => {
+        this.userList = res.data.rows
+        this.total = res.data.count
         this.loading = false
         console.log(this.userList)
       })
     },
+    getAllRole () {
+      allRole().then(res => {
+        this.roleOptions = res.data.rows
+        console.log(this.roleOptions)
+      })
+    },
     /** 查询部门下拉树结构 */
     getTreeselect () {
-      treeselect().then(response => {
-        this.deptOptions = this.handleTree(response.data.rows, 'deptId').arr
+      treeselect().then(res => {
+        this.deptOptions = this.handleTree(res.data.rows, 'deptId').arr
         console.log(this.deptOptions)
       })
     },
     // 筛选节点
     filterNode (value, data) {
       if (!value) return true
-      return data.label.indexOf(value) !== -1
+      return data.deptName.indexOf(value) !== -1
     },
     // 节点单击事件
     handleNodeClick (data) {
@@ -472,7 +476,7 @@ export default {
       }).then(function () {
         return changeUserStatus(row.id, row.status)
       }).then(() => {
-        this.msgSuccess(text + '成功')
+        this.$httpResponse(text + '成功')
       }).catch(function () {
         row.status = row.status === '0' ? '1' : '0'
       })
@@ -490,7 +494,7 @@ export default {
         userName: undefined,
         nickName: undefined,
         password: undefined,
-        phonenumber: undefined,
+        mobile: undefined,
         email: undefined,
         sex: undefined,
         status: '0',
@@ -501,7 +505,7 @@ export default {
     },
     /** 搜索按钮操作 */
     handleQuery () {
-      this.queryParams.page = 1
+      this.queryParams.pageNum = 1
       this.getList()
     },
     /** 重置按钮操作 */
@@ -519,8 +523,7 @@ export default {
     handleAdd () {
       this.reset()
       this.getTreeselect()
-      getUser().then(response => {
-        this.roleOptions = response.roles
+      getUser().then(res => {
         this.open = true
         this.title = '添加用户'
         this.form.password = this.initPassword
@@ -531,9 +534,10 @@ export default {
       this.reset()
       this.getTreeselect()
       const id = row.id || this.ids
-      getUser(id).then(response => {
-        this.form = response.data
-        this.roleOptions = response.roles
+      getUser(id).then(res => {
+        this.form = res.data
+        this.$set(this.form, 'roleIds', res.data.roles.map(item => item.id))
+
         this.open = true
         this.title = '修改用户'
         this.form.password = ''
@@ -545,10 +549,8 @@ export default {
         confirmButtonText: '确定',
         cancelButtonText: '取消'
       }).then(({ value }) => {
-        resetUserPwd(row.id, value).then(response => {
-          if (response.code === 200) {
-            this.msgSuccess('修改成功，新密码是：' + value)
-          }
+        resetUserPwd(row.id, value).then(res => {
+          this.$httpResponse('修改成功，新密码是：' + value)
         })
       }).catch(() => {})
     },
@@ -557,20 +559,16 @@ export default {
       this.$refs.form.validate(valid => {
         if (valid) {
           if (this.form.id !== undefined) {
-            updateUser(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('修改成功')
-                this.open = false
-                this.getList()
-              }
+            updateUser(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           } else {
-            addUser(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('新增成功')
-                this.open = false
-                this.getList()
-              }
+            addUser(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           }
         }
@@ -579,7 +577,7 @@ export default {
     /** 删除按钮操作 */
     handleDelete (row) {
       const ids = row.id || this.ids
-      this.$confirm('是否确认删除用户编号为"' + ids + '"的数据项?', '警告', {
+      this.$confirm('是否确认删除用户?', '警告', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -587,7 +585,7 @@ export default {
         return delUser(ids)
       }).then(() => {
         this.getList()
-        this.msgSuccess('删除成功')
+        this.$httpResponse('删除成功')
       }).catch(function () {})
     },
     /** 导出按钮操作 */
@@ -599,8 +597,8 @@ export default {
         type: 'warning'
       }).then(function () {
         return exportUser(queryParams)
-      }).then(response => {
-        this.download(response.msg)
+      }).then(res => {
+        this.download(res.msg)
       }).catch(function () {})
     },
     /** 导入按钮操作 */
@@ -610,8 +608,8 @@ export default {
     },
     /** 下载模板操作 */
     importTemplate () {
-      importTemplate().then(response => {
-        this.download(response.msg)
+      importTemplate().then(res => {
+        this.download(res.msg)
       })
     },
     // 文件上传中处理
@@ -623,11 +621,11 @@ export default {
       this.upload.updateSupport = 0
     },
     // 文件上传成功处理
-    handleFileSuccess (response, file, fileList) {
+    handleFileSuccess (res, file, fileList) {
       this.upload.open = false
       this.upload.isUploading = false
       this.$refs.upload.clearFiles()
-      this.$alert(response.msg, '导入结果', { dangerouslyUseHTMLString: true })
+      this.$alert(res.msg, '导入结果', { dangerouslyUseHTMLString: true })
       this.getList()
     },
     // 提交上传文件

@@ -6,5 +6,5 @@ export default {
   Notice: () => import('@/views/system/notice'),
   Menu: () => import('@/views/system/menu'),
   Dict: () => import('@/views/system/dict'),
-  Dept: () => import('@/views/system/dept'),
+  Dept: () => import('@/views/system/dept')
 }

@@ -1,44 +1,5 @@
 <template>
   <div class="app-container">
-    <el-form :inline="true">
-      <el-form-item label="部门名称">
-        <el-input
-          v-model="queryParams.deptName"
-          placeholder="请输入部门名称"
-          clearable
-          size="small"
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="queryParams.status" placeholder="部门状态" clearable size="small">
-          <el-option
-            v-for="dict in statusOptions"
-            :key="dict.dictValue"
-            :label="dict.dictLabel"
-            :value="dict.dictValue"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button
-          class="filter-item"
-          type="primary"
-          icon="el-icon-search"
-          size="mini"
-          @click="handleQuery"
-        >搜索</el-button>
-        <el-button
-          v-hasPermi="['system:dept:add']"
-          class="filter-item"
-          type="primary"
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-        >新增</el-button>
-      </el-form-item>
-    </el-form>
-
     <el-table
       v-loading="loading"
       :data="deptList"
@@ -49,22 +10,16 @@
       <el-table-column prop="deptName" label="部门名称" width="260" />
       <el-table-column prop="orderNum" label="排序" width="200" />
       <el-table-column prop="status" label="状态" :formatter="statusFormat" width="100" />
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="200">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createdAt) }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="创建时间" align="center" :formatter="dateFormatter" prop="createdAt" width="200"></el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
-            v-hasPermi="['system:dept:edit']"
             size="mini"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
           >修改</el-button>
           <el-button
-            v-hasPermi="['system:dept:add']"
             size="mini"
             type="text"
             icon="el-icon-plus"
@@ -73,7 +28,6 @@
           <el-button
             class="delete"
             v-if="scope.row.parentId != 0"
-            v-hasPermi="['system:dept:remove']"
             size="mini"
             type="text"
             icon="el-icon-delete"
@@ -146,7 +100,7 @@
 </template>
 
 <script>
-import { listDept, getDept, delDept, addDept, updateDept, listDeptExcludeChild } from '@/api/system/dept'
+import { treeselect, getDept, delDept, addDept, updateDept, listDeptExcludeChild } from '@/api/system/dept'
 import Treeselect from '@riophae/vue-treeselect'
 import '@riophae/vue-treeselect/dist/vue-treeselect.css'
 
@@ -169,11 +123,6 @@ export default {
       statusOptions: [],
       // 部门类型字典
       deptTypeOptions: [],
-      // 查询参数
-      queryParams: {
-        deptName: undefined,
-        status: undefined
-      },
       // 表单参数
       form: {},
       // 表单校验
@@ -206,19 +155,19 @@ export default {
   },
   created () {
     this.getList()
-    this.getDicts('sys_normal_disable').then(response => {
-      this.statusOptions = response.data
-    })
-    this.getDicts('sys_dept_type').then(response => {
-      this.deptTypeOptions = response.data
-    })
+    // this.getDicts('sys_normal_disable').then(res => {
+    //   this.statusOptions = res.data
+    // })
+    // this.getDicts('sys_dept_type').then(res => {
+    //   this.deptTypeOptions = res.data
+    // })
   },
   methods: {
     /** 查询部门列表 */
     getList () {
       this.loading = true
-      listDept(this.queryParams).then(response => {
-        this.deptList = this.handleTree(response.data, 'deptId')
+      treeselect().then(res => {
+        this.deptList = this.handleTree(res.data.rows, 'deptId').arr
         this.loading = false
       })
     },
@@ -268,20 +217,20 @@ export default {
       }
       this.open = true
       this.title = '添加部门'
-      listDept().then(response => {
-        this.deptOptions = this.handleTree(response.data, 'deptId')
-      })
+      // listDept().then(res => {
+      //   this.deptOptions = this.handleTree(res.data, 'deptId')
+      // })
     },
     /** 修改按钮操作 */
     handleUpdate (row) {
       this.reset()
-      getDept(row.deptId).then(response => {
-        this.form = response.data
+      getDept(row.deptId).then(res => {
+        this.form = res.data
         this.open = true
         this.title = '修改部门'
       })
-      listDeptExcludeChild(row.deptId).then(response => {
-        this.deptOptions = this.handleTree(response.data, 'deptId')
+      listDeptExcludeChild(row.deptId).then(res => {
+        this.deptOptions = this.handleTree(res.data, 'deptId')
       })
     },
     /** 提交按钮 */
@@ -289,20 +238,16 @@ export default {
       this.$refs.form.validate(valid => {
         if (valid) {
           if (this.form.deptId !== undefined) {
-            updateDept(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('修改成功')
-                this.open = false
-                this.getList()
-              }
+            updateDept(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           } else {
-            addDept(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('新增成功')
-                this.open = false
-                this.getList()
-              }
+            addDept(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           }
         }
@@ -318,7 +263,7 @@ export default {
         return delDept(row.deptId)
       }).then(() => {
         this.getList()
-        this.msgSuccess('删除成功')
+        this.$httpResponse('删除成功')
       }).catch(function () {})
     }
   }

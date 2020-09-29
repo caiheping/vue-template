@@ -52,6 +52,19 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/dict',
+    component: (resolve) => require(['@/views/layout'], resolve),
+    hidden: true,
+    children: [
+      {
+        path: 'type/data/:id(\\d+)',
+        component: (resolve) => require(['@/views/system/dict/data'], resolve),
+        name: 'Data',
+        meta: { title: '字典数据', icon: '' }
+      }
+    ]
+  },
+  {
     path: '/404',
     hidden: true,
     component: (resolve) => require(['@/views/error/404'], resolve),

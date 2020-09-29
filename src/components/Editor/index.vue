@@ -123,17 +123,13 @@ export default {
       // 获取富文本组件实例
       const quill = this.$refs.quillEditor.quill
       // 如果上传成功
-      if (res.code === 200) {
-        // 获取光标所在位置
-        const length = quill.getSelection().index
-        // 插入图片  res.url为服务器返回的图片地址
-        // quill.insertEmbed(length, 'image', res.url)
-        quill.insertEmbed(length, 'image', process.env.VUE_APP_BASE_API + res.fileName)
-        // 调整光标到最后
-        quill.setSelection(length + 1)
-      } else {
-        this.$message.error('图片插入失败')
-      }
+      // 获取光标所在位置
+      const length = quill.getSelection().index
+      // 插入图片  res.url为服务器返回的图片地址
+      // quill.insertEmbed(length, 'image', res.url)
+      quill.insertEmbed(length, 'image', process.env.VUE_APP_BASE_API + res.fileName)
+      // 调整光标到最后
+      quill.setSelection(length + 1)
     },
     // 富文本图片上传失败
     uploadError () {

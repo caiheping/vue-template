@@ -1,6 +1,6 @@
 import axios from 'axios'
 import store from '@/store'
-import { Message } from 'element-ui'
+import { Message, MessageBox } from 'element-ui'
 import router from '../router'
 
 axios.defaults.withCredentials = true // 跨域访问需要发送cookie时一定要加这句
@@ -25,9 +25,8 @@ axios.interceptors.response.use(function (response) {
 function errorState (error) {
   // 隐藏loading
   store.state.app.loading = false
-  console.log(error.response)
-
   let offset = 1
+  let msg = ''
   switch (error.response.status) {
     case 400:
       for (const key in error.response.data.msg) {
@@ -38,33 +37,46 @@ function errorState (error) {
         })
         offset++
       }
+      msg = '参数错误'
       break
     case 401:
-      Message({
-        type: 'error',
-        message: error.response.data.msg
+      MessageBox.confirm(
+        '登录状态已过期，您可以继续留在该页面，或者重新登录',
+        '系统提示',
+        {
+          confirmButtonText: '重新登录',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      ).then(() => {
+        store.dispatch('LogOut').then(() => {
+          location.reload() // 为了重新实例化vue-router对象 避免bug
+        })
       })
-      router.replace('/login')
+      msg = 'token失效'
       break
     case 403:
       Message({
         type: 'error',
         message: '拒绝访问'
       })
+      msg = '拒绝访问'
       break
     case 500:
       Message({
         type: 'error',
         message: error.response.data.msg
       })
+      msg = '服务器异常'
       break
     default:
       Message({
         type: 'error',
         message: '服务器异常'
       })
-      throw new Error('服务器异常')
+      msg = '服务器异常'
   }
+  throw new Error(msg)
 }
 
 // 封装数据返回成功提示函数

@@ -5,7 +5,7 @@
         <el-select v-model="queryParams.dictType" size="small">
           <el-option
             v-for="item in typeOptions"
-            :key="item.dictId"
+            :key="item.id"
             :label="item.dictName"
             :value="item.dictType"
           />
@@ -39,7 +39,6 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:dict:add']"
           type="primary"
           icon="el-icon-plus"
           size="mini"
@@ -48,7 +47,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:dict:edit']"
           type="success"
           icon="el-icon-edit"
           size="mini"
@@ -58,7 +56,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:dict:remove']"
           type="danger"
           icon="el-icon-delete"
           size="mini"
@@ -68,7 +65,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:dict:export']"
           type="warning"
           icon="el-icon-download"
           size="mini"
@@ -79,21 +75,15 @@
 
     <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="字典编码" align="center" prop="dictCode" />
       <el-table-column label="字典标签" align="center" prop="dictLabel" />
       <el-table-column label="字典键值" align="center" prop="dictValue" />
       <el-table-column label="字典排序" align="center" prop="dictSort" />
       <el-table-column label="状态" align="center" prop="status" :formatter="statusFormat" />
       <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="180">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createdAt) }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="创建时间" :formatter="dateFormatter" align="center" prop="createdAt" width="180"></el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
-            v-hasPermi="['system:dict:edit']"
             size="mini"
             type="text"
             icon="el-icon-edit"
@@ -101,7 +91,6 @@
           >修改</el-button>
           <el-button
             class="delete"
-            v-hasPermi="['system:dict:remove']"
             size="mini"
             type="text"
             icon="el-icon-delete"
@@ -210,34 +199,34 @@ export default {
     }
   },
   created () {
-    const dictId = this.$route.params && this.$route.params.dictId
-    this.getType(dictId)
+    const id = this.$route.params && this.$route.params.id
+    this.getType(id)
     this.getTypeList()
-    this.getDicts('sys_normal_disable').then(response => {
-      this.statusOptions = response.data
-    })
+    // this.getDicts('sys_normal_disable').then(res => {
+    //   this.statusOptions = res.data
+    // })
   },
   methods: {
     /** 查询字典类型详细 */
-    getType (dictId) {
-      getType(dictId).then(response => {
-        this.queryParams.dictType = response.data.dictType
-        this.defaultDictType = response.data.dictType
+    getType (id) {
+      getType(id).then(res => {
+        this.queryParams.dictType = res.data.dictType
+        this.defaultDictType = res.data.dictType
         this.getList()
       })
     },
     /** 查询字典类型列表 */
     getTypeList () {
-      listType().then(response => {
-        this.typeOptions = response.rows
+      listType().then(res => {
+        this.typeOptions = res.data.rows
       })
     },
     /** 查询字典数据列表 */
     getList () {
       this.loading = true
-      listData(this.queryParams).then(response => {
-        this.dataList = response.rows
-        this.total = response.total
+      listData(this.queryParams).then(res => {
+        this.dataList = res.data.rows
+        this.total = res.data.count
         this.loading = false
       })
     },
@@ -290,8 +279,8 @@ export default {
     handleUpdate (row) {
       this.reset()
       const dictCode = row.dictCode || this.ids
-      getData(dictCode).then(response => {
-        this.form = response.data
+      getData(dictCode).then(res => {
+        this.form = res.data
         this.open = true
         this.title = '修改字典数据'
       })
@@ -301,20 +290,16 @@ export default {
       this.$refs.form.validate(valid => {
         if (valid) {
           if (this.form.dictCode !== undefined) {
-            updateData(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('修改成功')
-                this.open = false
-                this.getList()
-              }
+            updateData(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           } else {
-            addData(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('新增成功')
-                this.open = false
-                this.getList()
-              }
+            addData(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           }
         }
@@ -331,7 +316,7 @@ export default {
         return delData(dictCodes)
       }).then(() => {
         this.getList()
-        this.msgSuccess('删除成功')
+        this.$httpResponse('删除成功')
       }).catch(function () {})
     },
     /** 导出按钮操作 */
@@ -343,8 +328,8 @@ export default {
         type: 'warning'
       }).then(function () {
         return exportData(queryParams)
-      }).then(response => {
-        this.download(response.msg)
+      }).then(res => {
+        this.download(res.msg)
       }).catch(function () {})
     }
   }

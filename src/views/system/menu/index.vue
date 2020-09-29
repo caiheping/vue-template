@@ -1,63 +1,31 @@
 <template>
   <div class="app-container">
-    <el-form :inline="true">
-      <el-form-item label="菜单名称">
-        <el-input
-          v-model="queryParams.menuName"
-          placeholder="请输入菜单名称"
-          clearable
-          size="small"
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="queryParams.status" placeholder="菜单状态" clearable size="small">
-          <el-option
-            v-for="dict in statusOptions"
-            :key="dict.dictValue"
-            :label="dict.dictLabel"
-            :value="dict.dictValue"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button v-hasPermi="['system:menu:add']" type="primary" icon="el-icon-plus" size="mini" @click="handleAdd">新增</el-button>
-      </el-form-item>
-    </el-form>
-
     <el-table
       v-loading="loading"
       :data="menuList"
-      row-key="menuId"
+      row-key="id"
       :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
     >
-      <el-table-column prop="menuName" label="菜单名称" :show-overflow-tooltip="true" width="160" />
+      <el-table-column prop="title" label="菜单名称" :show-overflow-tooltip="true" width="160" />
       <el-table-column prop="icon" label="图标" align="center" width="100">
-        <template slot-scope="scope">
-          <svg-icon :icon-class="scope.row.icon" />
-        </template>
+<!--        <template slot-scope="scope">-->
+<!--          <svg-icon :icon-class="scope.row.icon" />-->
+<!--        </template>-->
       </el-table-column>
       <el-table-column prop="orderNum" label="排序" width="60" />
       <el-table-column prop="perms" label="权限标识" :show-overflow-tooltip="true" />
       <el-table-column prop="component" label="组件路径" :show-overflow-tooltip="true" />
       <el-table-column prop="status" label="状态" :formatter="statusFormat" width="80" />
-      <el-table-column label="创建时间" align="center" prop="createdAt">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createdAt) }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="创建时间" align="center" prop="createdAt" :formatter="dateFormatter"></el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
-            v-hasPermi="['system:menu:edit']"
             size="mini"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
           >修改</el-button>
           <el-button
-            v-hasPermi="['system:menu:add']"
             size="mini"
             type="text"
             icon="el-icon-plus"
@@ -65,7 +33,6 @@
           >新增</el-button>
           <el-button
             class="delete"
-            v-hasPermi="['system:menu:remove']"
             size="mini"
             type="text"
             icon="el-icon-delete"
@@ -187,7 +154,7 @@
 </template>
 
 <script>
-import { listMenu, getMenu, delMenu, addMenu, updateMenu } from '@/api/system/menu'
+import { getRouters, getMenu, delMenu, addMenu, updateMenu } from '@/api/system/menu'
 import Treeselect from '@riophae/vue-treeselect'
 import '@riophae/vue-treeselect/dist/vue-treeselect.css'
 import IconSelect from '@/components/IconSelect'
@@ -211,11 +178,6 @@ export default {
       visibleOptions: [],
       // 菜单状态数据字典
       statusOptions: [],
-      // 查询参数
-      queryParams: {
-        menuName: undefined,
-        visible: undefined
-      },
       // 表单参数
       form: {},
       // 表单校验
@@ -234,12 +196,12 @@ export default {
   },
   created () {
     this.getList()
-    this.getDicts('sys_show_hide').then(response => {
-      this.visibleOptions = response.data
-    })
-    this.getDicts('sys_normal_disable').then(response => {
-      this.statusOptions = response.data
-    })
+    // this.getDicts('sys_show_hide').then(res => {
+    //   this.visibleOptions = res.data
+    // })
+    // this.getDicts('sys_normal_disable').then(res => {
+    //   this.statusOptions = res.data
+    // })
   },
   methods: {
     // 选择图标
@@ -249,9 +211,10 @@ export default {
     /** 查询菜单列表 */
     getList () {
       this.loading = true
-      listMenu(this.queryParams).then(response => {
-        this.menuList = this.handleTree(response.data, 'menuId')
+      getRouters().then(res => {
+        this.menuList = this.handleTree(res.data, 'id', 'parentId').arr
         this.loading = false
+        console.log(this.menuList)
       })
     },
     /** 转换菜单数据结构 */
@@ -267,10 +230,10 @@ export default {
     },
     /** 查询菜单下拉树结构 */
     getTreeselect () {
-      listMenu().then(response => {
+      getRouters().then(res => {
         this.menuOptions = []
         const menu = { menuId: 0, menuName: '主类目', children: [] }
-        menu.children = this.handleTree(response.data, 'menuId')
+        menu.children = this.handleTree(res.data, 'menuId')
         this.menuOptions.push(menu)
       })
     },
@@ -326,8 +289,8 @@ export default {
     handleUpdate (row) {
       this.reset()
       this.getTreeselect()
-      getMenu(row.menuId).then(response => {
-        this.form = response.data
+      getMenu(row.menuId).then(res => {
+        this.form = res.data
         this.open = true
         this.title = '修改菜单'
       })
@@ -337,20 +300,16 @@ export default {
       this.$refs.form.validate(valid => {
         if (valid) {
           if (this.form.menuId !== undefined) {
-            updateMenu(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('修改成功')
-                this.open = false
-                this.getList()
-              }
+            updateMenu(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           } else {
-            addMenu(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('新增成功')
-                this.open = false
-                this.getList()
-              }
+            addMenu(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           }
         }
@@ -366,7 +325,7 @@ export default {
         return delMenu(row.menuId)
       }).then(() => {
         this.getList()
-        this.msgSuccess('删除成功')
+        this.$httpResponse('删除成功')
       }).catch(function () {})
     }
   }

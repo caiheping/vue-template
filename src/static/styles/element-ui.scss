@@ -30,8 +30,8 @@
 
 .fixed-width {
   .el-button--mini {
-    padding: 7px 10px;
-    width: 60px;
+    //padding: 7px 10px;
+    //width: 60px;
   }
 }
 
@@ -86,6 +86,10 @@
 .el-message-box__message{
   max-height: 500px;
   overflow: auto;
+}
+
+.el-message{
+  z-index: 9999 !important;
 }
 
 .el-dialog__header {

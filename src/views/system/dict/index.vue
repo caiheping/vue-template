@@ -58,7 +58,6 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:dict:add']"
           type="primary"
           icon="el-icon-plus"
           size="mini"
@@ -67,7 +66,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:dict:edit']"
           type="success"
           icon="el-icon-edit"
           size="mini"
@@ -77,7 +75,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:dict:remove']"
           type="danger"
           icon="el-icon-delete"
           size="mini"
@@ -87,7 +84,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:dict:export']"
           type="warning"
           icon="el-icon-download"
           size="mini"
@@ -96,7 +92,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:dict:remove']"
           type="danger"
           icon="el-icon-refresh"
           size="mini"
@@ -107,26 +102,21 @@
 
     <el-table v-loading="loading" :data="typeList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="字典编号" align="center" prop="dictId" />
+      <el-table-column label="字典编号" align="center" prop="id" />
       <el-table-column label="字典名称" align="center" prop="dictName" :show-overflow-tooltip="true" />
       <el-table-column label="字典类型" align="center" :show-overflow-tooltip="true">
         <template slot-scope="scope">
-          <router-link :to="'/dict/type/data/' + scope.row.dictId" class="link-type">
+          <router-link :to="'/dict/type/data/' + scope.row.id" class="link-type">
             <span>{{ scope.row.dictType }}</span>
           </router-link>
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status" :formatter="statusFormat" />
       <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="180">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createdAt) }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="创建时间" align="center" prop="createdAt" :formatter="dateFormatter" width="200"></el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
-            v-hasPermi="['system:dict:edit']"
             size="mini"
             type="text"
             icon="el-icon-edit"
@@ -134,7 +124,6 @@
           >修改</el-button>
           <el-button
             class="delete"
-            v-hasPermi="['system:dict:remove']"
             size="mini"
             type="text"
             icon="el-icon-delete"
@@ -232,17 +221,17 @@ export default {
   },
   created () {
     this.getList()
-    this.getDicts('sys_normal_disable').then(response => {
-      this.statusOptions = response.data
-    })
+    // this.getDicts('sys_normal_disable').then(res => {
+    //   this.statusOptions = res.data
+    // })
   },
   methods: {
     /** 查询字典类型列表 */
     getList () {
       this.loading = true
-      listType(this.addDateRange(this.queryParams, this.dateRange)).then(response => {
-        this.typeList = response.rows
-        this.total = response.total
+      listType(this.queryParams).then(res => {
+        this.typeList = res.data.rows
+        this.total = res.data.count
         this.loading = false
       }
       )
@@ -294,8 +283,8 @@ export default {
     handleUpdate (row) {
       this.reset()
       const dictId = row.dictId || this.ids
-      getType(dictId).then(response => {
-        this.form = response.data
+      getType(dictId).then(res => {
+        this.form = res.data
         this.open = true
         this.title = '修改字典类型'
       })
@@ -305,20 +294,16 @@ export default {
       this.$refs.form.validate(valid => {
         if (valid) {
           if (this.form.dictId !== undefined) {
-            updateType(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('修改成功')
-                this.open = false
-                this.getList()
-              }
+            updateType(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           } else {
-            addType(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('新增成功')
-                this.open = false
-                this.getList()
-              }
+            addType(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           }
         }
@@ -335,7 +320,7 @@ export default {
         return delType(dictIds)
       }).then(() => {
         this.getList()
-        this.msgSuccess('删除成功')
+        this.$httpResponse('删除成功')
       }).catch(function () {})
     },
     /** 导出按钮操作 */
@@ -347,18 +332,17 @@ export default {
         type: 'warning'
       }).then(function () {
         return exportType(queryParams)
-      }).then(response => {
-        this.download(response.msg)
+      }).then(res => {
+        this.download(res.msg)
       }).catch(function () {})
     },
     /** 清理缓存按钮操作 */
     handleClearCache () {
-      clearCache().then(response => {
-        if (response.code === 200) {
-          this.msgSuccess('清理成功')
-        }
+      clearCache().then(res => {
+        this.$httpResponse('清理成功')
       })
     }
   }
 }
 </script>
+>

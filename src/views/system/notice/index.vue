@@ -10,15 +10,6 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="操作人员" prop="createBy">
-        <el-input
-          v-model="queryParams.createBy"
-          placeholder="请输入操作人员"
-          clearable
-          size="small"
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
       <el-form-item label="类型" prop="noticeType">
         <el-select v-model="queryParams.noticeType" placeholder="公告类型" clearable size="small">
           <el-option
@@ -38,7 +29,6 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:notice:add']"
           type="primary"
           icon="el-icon-plus"
           size="mini"
@@ -47,7 +37,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:notice:edit']"
           type="success"
           icon="el-icon-edit"
           size="mini"
@@ -57,7 +46,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          v-hasPermi="['system:notice:remove']"
           type="danger"
           icon="el-icon-delete"
           size="mini"
@@ -69,7 +57,6 @@
 
     <el-table v-loading="loading" :data="noticeList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="noticeId" width="100" />
       <el-table-column
         label="公告标题"
         align="center"
@@ -90,16 +77,11 @@
         :formatter="statusFormat"
         width="100"
       />
-      <el-table-column label="创建者" align="center" prop="createBy" width="100" />
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="100">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createdAt, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="创建者" align="center" prop="createdBy" width="100" />
+      <el-table-column label="创建时间" align="center" prop="createdAt" :formatter="dateFormatter" width="200"> </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
-            v-hasPermi="['system:notice:edit']"
             size="mini"
             type="text"
             icon="el-icon-edit"
@@ -107,7 +89,6 @@
           >修改</el-button>
           <el-button
             class="delete"
-            v-hasPermi="['system:notice:remove']"
             size="mini"
             type="text"
             icon="el-icon-delete"
@@ -208,7 +189,6 @@ export default {
         pageNum: 1,
         pageSize: 10,
         noticeTitle: undefined,
-        createBy: undefined,
         status: undefined
       },
       // 表单参数
@@ -226,20 +206,20 @@ export default {
   },
   created () {
     this.getList()
-    this.getDicts('sys_notice_status').then(response => {
-      this.statusOptions = response.data
-    })
-    this.getDicts('sys_notice_type').then(response => {
-      this.typeOptions = response.data
-    })
+    // this.getDicts('sys_notice_status').then(res => {
+    //   this.statusOptions = res.data
+    // })
+    // this.getDicts('sys_notice_type').then(res => {
+    //   this.typeOptions = res.data
+    // })
   },
   methods: {
     /** 查询公告列表 */
     getList () {
       this.loading = true
-      listNotice(this.queryParams).then(response => {
-        this.noticeList = response.rows
-        this.total = response.total
+      listNotice(this.queryParams).then(res => {
+        this.noticeList = res.data.rows
+        this.total = res.data.count
         this.loading = false
       })
     },
@@ -293,8 +273,8 @@ export default {
     handleUpdate (row) {
       this.reset()
       const noticeId = row.noticeId || this.ids
-      getNotice(noticeId).then(response => {
-        this.form = response.data
+      getNotice(noticeId).then(res => {
+        this.form = res.data
         this.open = true
         this.title = '修改公告'
       })
@@ -304,20 +284,16 @@ export default {
       this.$refs.form.validate(valid => {
         if (valid) {
           if (this.form.noticeId !== undefined) {
-            updateNotice(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('修改成功')
-                this.open = false
-                this.getList()
-              }
+            updateNotice(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           } else {
-            addNotice(this.form).then(response => {
-              if (response.code === 200) {
-                this.msgSuccess('新增成功')
-                this.open = false
-                this.getList()
-              }
+            addNotice(this.form).then(res => {
+              this.$httpResponse(res.msg)
+              this.open = false
+              this.getList()
             })
           }
         }
@@ -334,7 +310,7 @@ export default {
         return delNotice(noticeIds)
       }).then(() => {
         this.getList()
-        this.msgSuccess('删除成功')
+        this.$httpResponse('删除成功')
       }).catch(function () {})
     }
   }

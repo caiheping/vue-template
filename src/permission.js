@@ -23,7 +23,6 @@ router.beforeEach((to, from, next) => {
         store.dispatch('GetInfo').then(res => {
           store.dispatch('GenerateRoutes').then(accessRoutes => {
             router.addRoutes(accessRoutes) // 动态添加可访问路由表
-
             console.log(to)
             next({
               ...to,
